@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
-import { ChevronRight, Target, User } from 'lucide-react';
+import { ChevronRight, Target, User, Activity } from 'lucide-react';
 
 interface OnboardingProps {
   onComplete: (profile: UserProfile) => void;
@@ -19,7 +19,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   };
 
   const calculateTargets = () => {
-    // Mifflin-St Jeor Equation
     const { weight, height, age, gender, activityLevel, goal, name } = formData as any;
     let bmr = 10 * weight + 6.25 * height - 5 * age;
     bmr += gender === 'male' ? 5 : -161;
@@ -32,24 +31,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     };
     
     let tdee = bmr * activityMultipliers[activityLevel as keyof typeof activityMultipliers];
-
     if (goal === 'lose') tdee -= 500;
     if (goal === 'gain') tdee += 500;
 
     const calories = Math.round(tdee);
-    // Standard macro split: 30% P / 35% F / 35% C
     const protein = Math.round((calories * 0.3) / 4);
     const fat = Math.round((calories * 0.35) / 9);
     const carbs = Math.round((calories * 0.35) / 4);
 
     const profile: UserProfile = {
-      name,
-      age,
-      weight,
-      height,
-      gender,
-      activityLevel,
-      goal,
+      name, age, weight, height, gender, activityLevel, goal,
       calorieTarget: calories,
       proteinTarget: protein,
       fatTarget: fat,
@@ -61,133 +52,112 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8">
-        <div className="flex justify-center mb-6">
-            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                <Target className="w-6 h-6" />
-            </div>
-        </div>
-        
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">Let's set up your plan</h2>
-        <p className="text-center text-gray-500 mb-8 text-sm">Step {step} of 3</p>
-
+    <div className="min-h-screen bg-white flex flex-col justify-between p-6 pb-10">
+      
+      <div className="flex-1 flex flex-col items-center pt-12">
         {step === 1 && (
-          <div className="space-y-4 animate-fade-in">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-              <input 
-                type="text" 
-                className="w-full p-3 bg-slate-50 rounded-xl border border-gray-200 text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none"
-                onChange={e => setFormData({...formData, name: e.target.value})}
-                value={formData.name || ''}
-                placeholder="Enter your name"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
-                    <input 
-                        type="number" 
-                        className="w-full p-3 bg-slate-50 rounded-xl border border-gray-200 text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500" 
-                        onChange={e => setFormData({...formData, age: Number(e.target.value)})} 
-                        placeholder="25"
-                    />
+            <div className="w-full max-w-xs mx-auto animate-fade-in text-center">
+                <div className="w-20 h-20 bg-[#007AFF] rounded-[24px] flex items-center justify-center text-white mb-8 mx-auto shadow-lg shadow-blue-500/30">
+                    <User className="w-10 h-10" strokeWidth={2.5} />
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                    <select 
-                        className="w-full p-3 bg-slate-50 rounded-xl border border-gray-200 text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500" 
-                        onChange={e => setFormData({...formData, gender: e.target.value as any})} 
-                        value={formData.gender}
-                    >
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                    </select>
+                <h1 className="text-3xl font-bold tracking-tight text-black mb-3">Welcome</h1>
+                <p className="text-gray-500 text-lg mb-10 leading-relaxed">Let's get to know you to build your perfect health plan.</p>
+                
+                <div className="space-y-4 text-left">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-900 mb-1.5">Name</label>
+                        <input 
+                            type="text" 
+                            className="w-full p-4 bg-[#F2F2F7] rounded-[16px] text-gray-900 text-lg outline-none focus:ring-2 focus:ring-[#007AFF]/20"
+                            onChange={e => setFormData({...formData, name: e.target.value})}
+                            value={formData.name || ''}
+                            placeholder="John Appleseed"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-900 mb-1.5">Age</label>
+                            <input type="number" className="w-full p-4 bg-[#F2F2F7] rounded-[16px] text-gray-900 text-lg outline-none" onChange={e => setFormData({...formData, age: Number(e.target.value)})} placeholder="25" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-900 mb-1.5">Gender</label>
+                            <select className="w-full p-4 bg-[#F2F2F7] rounded-[16px] text-gray-900 text-lg outline-none appearance-none" onChange={e => setFormData({...formData, gender: e.target.value as any})} value={formData.gender}>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <button 
-                onClick={handleNext}
-                disabled={!formData.name || !formData.age}
-                className="w-full mt-6 bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-                Next Step
-            </button>
-          </div>
         )}
 
         {step === 2 && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Height (cm)</label>
-                    <input 
-                        type="number" 
-                        className="w-full p-3 bg-slate-50 rounded-xl border border-gray-200 text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500" 
-                        onChange={e => setFormData({...formData, height: Number(e.target.value)})} 
-                        placeholder="175"
-                    />
+            <div className="w-full max-w-xs mx-auto animate-fade-in text-center">
+                <div className="w-20 h-20 bg-[#34C759] rounded-[24px] flex items-center justify-center text-white mb-8 mx-auto shadow-lg shadow-green-500/30">
+                    <Activity className="w-10 h-10" strokeWidth={2.5} />
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
-                    <input 
-                        type="number" 
-                        className="w-full p-3 bg-slate-50 rounded-xl border border-gray-200 text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500" 
-                        onChange={e => setFormData({...formData, weight: Number(e.target.value)})} 
-                        placeholder="70"
-                    />
+                <h1 className="text-3xl font-bold tracking-tight text-black mb-3">Body Stats</h1>
+                <p className="text-gray-500 text-lg mb-10">This helps us calculate your metabolic rate.</p>
+
+                <div className="space-y-4 text-left">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-900 mb-1.5">Height (cm)</label>
+                            <input type="number" className="w-full p-4 bg-[#F2F2F7] rounded-[16px] text-gray-900 text-lg outline-none" onChange={e => setFormData({...formData, height: Number(e.target.value)})} placeholder="175" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-900 mb-1.5">Weight (kg)</label>
+                            <input type="number" className="w-full p-4 bg-[#F2F2F7] rounded-[16px] text-gray-900 text-lg outline-none" onChange={e => setFormData({...formData, weight: Number(e.target.value)})} placeholder="70" />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-900 mb-1.5">Activity</label>
+                        <select className="w-full p-4 bg-[#F2F2F7] rounded-[16px] text-gray-900 text-lg outline-none appearance-none" onChange={e => setFormData({...formData, activityLevel: e.target.value as any})} value={formData.activityLevel}>
+                            <option value="sedentary">Sedentary</option>
+                            <option value="light">Light Active</option>
+                            <option value="moderate">Moderate</option>
+                            <option value="active">Very Active</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Activity Level</label>
-                <select 
-                    className="w-full p-3 bg-slate-50 rounded-xl border border-gray-200 text-gray-900 outline-none focus:ring-2 focus:ring-emerald-500" 
-                    onChange={e => setFormData({...formData, activityLevel: e.target.value as any})} 
-                    value={formData.activityLevel}
-                >
-                    <option value="sedentary">Sedentary (Office Job)</option>
-                    <option value="light">Light Exercise (1-2 days)</option>
-                    <option value="moderate">Moderate (3-5 days)</option>
-                    <option value="active">Active (6-7 days)</option>
-                </select>
-            </div>
-            <button 
-                onClick={handleNext}
-                disabled={!formData.height || !formData.weight}
-                className="w-full mt-6 bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors disabled:bg-gray-300"
-            >
-                Next Step
-            </button>
-          </div>
         )}
 
         {step === 3 && (
-          <div className="space-y-4 animate-fade-in">
-            <label className="block text-sm font-medium text-gray-700 mb-3">What is your main goal?</label>
-            <div className="space-y-3">
-                {['lose', 'maintain', 'gain'].map((g) => (
-                    <button
-                        key={g}
-                        onClick={() => setFormData({...formData, goal: g as any})}
-                        className={`w-full p-4 rounded-xl border-2 text-left transition-all flex justify-between items-center
-                            ${formData.goal === g 
-                                ? 'border-emerald-500 bg-emerald-50 text-emerald-900' 
-                                : 'border-gray-100 hover:border-emerald-200 text-gray-600'
+            <div className="w-full max-w-xs mx-auto animate-fade-in text-center">
+                <div className="w-20 h-20 bg-[#FF4F00] rounded-[24px] flex items-center justify-center text-white mb-8 mx-auto shadow-lg shadow-orange-500/30">
+                    <Target className="w-10 h-10" strokeWidth={2.5} />
+                </div>
+                <h1 className="text-3xl font-bold tracking-tight text-black mb-3">Your Goal</h1>
+                <p className="text-gray-500 text-lg mb-10">What do you want to achieve?</p>
+
+                <div className="space-y-3">
+                    {['lose', 'maintain', 'gain'].map((g) => (
+                        <button
+                            key={g}
+                            onClick={() => setFormData({...formData, goal: g as any})}
+                            className={`w-full p-4 rounded-[16px] font-semibold text-left transition-all border-2 ${
+                                formData.goal === g 
+                                ? 'border-[#007AFF] bg-blue-50 text-[#007AFF]' 
+                                : 'border-transparent bg-[#F2F2F7] text-gray-900'
                             }`}
-                    >
-                        <span className="capitalize">{g} Weight</span>
-                        {formData.goal === g && <div className="w-3 h-3 bg-emerald-500 rounded-full" />}
-                    </button>
-                ))}
+                        >
+                            <span className="capitalize">{g} Weight</span>
+                        </button>
+                    ))}
+                </div>
             </div>
-            <button 
-                onClick={calculateTargets}
-                className="w-full mt-6 bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors"
-            >
-                Create My Plan
-            </button>
-          </div>
         )}
+      </div>
+
+      <div className="w-full max-w-xs mx-auto">
+         <button 
+            onClick={step === 3 ? calculateTargets : handleNext}
+            disabled={step === 1 ? (!formData.name) : step === 2 ? (!formData.height || !formData.weight) : false}
+            className="w-full py-4 bg-[#007AFF] hover:bg-[#0071E3] active:scale-[0.98] transition-all text-white rounded-[16px] font-bold text-[17px] shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+         >
+            {step === 3 ? 'Get Started' : 'Continue'}
+         </button>
       </div>
     </div>
   );

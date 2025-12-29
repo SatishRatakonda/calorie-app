@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User } from 'lucide-react';
+import { Send, Sparkles } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { askNutritionCoach } from '../services/gemini';
 
@@ -45,7 +45,7 @@ export const AICoach: React.FC<AICoachProps> = ({ history, onSendMessage, userCo
         const errorMsg: ChatMessage = {
             id: crypto.randomUUID(),
             role: 'model',
-            text: "I'm having trouble connecting right now. Please try again.",
+            text: "I'm having trouble connecting. Check your internet.",
             timestamp: Date.now()
         };
         onSendMessage(errorMsg);
@@ -55,59 +55,65 @@ export const AICoach: React.FC<AICoachProps> = ({ history, onSendMessage, userCo
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-160px)] bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-      <div className="bg-emerald-50 p-4 border-b border-emerald-100 flex items-center gap-3">
-        <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
-            <Bot className="w-6 h-6" />
-        </div>
-        <div>
-            <h3 className="font-bold text-gray-800">AI Nutrition Coach</h3>
-            <p className="text-xs text-emerald-600 font-medium">Online & Ready to Help</p>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+    <div className="flex flex-col h-[calc(100vh-140px)] bg-[#F2F2F7]">
+      
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {history.length === 0 && (
-            <div className="text-center text-gray-400 mt-10">
-                <Bot className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>Ask me anything about your diet, meal plans, or nutrition!</p>
+            <div className="flex flex-col items-center justify-center h-full text-center opacity-50">
+                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                    <Sparkles className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-1">Nutrition Assistant</h3>
+                <p className="text-sm text-gray-500 max-w-xs">Ask me to analyze your meals, suggest recipes, or explain your macros.</p>
             </div>
         )}
+        
         {history.map((msg) => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-white text-gray-700 border border-gray-100 rounded-tl-none'}`}>
+                <div 
+                    className={`max-w-[80%] px-4 py-2.5 text-[17px] leading-snug shadow-sm ${
+                        msg.role === 'user' 
+                        ? 'bg-[#007AFF] text-white rounded-[20px] rounded-tr-none' 
+                        : 'bg-white text-black rounded-[20px] rounded-tl-none border border-gray-100'
+                    }`}
+                >
                     {msg.text}
                 </div>
             </div>
         ))}
+        
         {isLoading && (
             <div className="flex justify-start">
-                <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm flex gap-2 items-center">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce delay-75"></div>
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce delay-150"></div>
+                <div className="bg-white px-4 py-3 rounded-[20px] rounded-tl-none border border-gray-100 shadow-sm flex gap-1.5 items-center">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-75"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
                 </div>
             </div>
         )}
         <div ref={scrollRef} />
       </div>
 
-      <div className="p-4 bg-white border-t border-gray-100">
-        <div className="flex gap-2">
-            <input 
-                type="text" 
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Ask about your macros, meal ideas..."
-                className="flex-1 bg-slate-50 border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-            />
+      <div className="p-3 bg-[#F2F2F7] pb-safe">
+        <div className="flex gap-2 items-end">
+            <div className="flex-1 bg-white border border-gray-300/50 rounded-[24px] px-4 py-2 shadow-sm focus-within:ring-2 focus-within:ring-[#007AFF] transition-all">
+                <input 
+                    type="text" 
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                    placeholder="iMessage"
+                    className="w-full text-[17px] bg-transparent outline-none text-gray-900 placeholder-gray-400 h-8"
+                />
+            </div>
             <button 
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
-                className="bg-emerald-600 text-white p-3 rounded-xl hover:bg-emerald-700 disabled:bg-gray-300 transition-colors shadow-lg shadow-emerald-600/20"
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all mb-1.5 flex-shrink-0 ${
+                    input.trim() ? 'bg-[#007AFF] text-white' : 'bg-gray-300 text-white'
+                }`}
             >
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4 fill-current ml-0.5" />
             </button>
         </div>
       </div>

@@ -1,168 +1,212 @@
-import React from 'react';
-import { UserProfile, DailyLog } from '../types';
-import { Droplets, Flame, Plus, Footprints } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { UserProfile, DailyLog, NutritionAnalysis } from '../types';
+import { Droplets, Flame, ChevronRight, Trash2 } from 'lucide-react';
 import { MacroChart } from './MacroChart';
-import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface DashboardProps {
   profile: UserProfile;
   todayLog: DailyLog;
   onAddWater: (amount: number) => void;
   onLogFood: () => void;
+  onDeleteMeal: (id: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ profile, todayLog, onAddWater, onLogFood }) => {
+const SwipeableMealRow: React.FC<{ meal: NutritionAnalysis; onDelete: (id: string) => void }> = ({ meal, onDelete }) => {
+    const [translateX, setTranslateX] = useState(0);
+    const startX = useRef<number | null>(null);
+    const currentX = useRef<number | null>(null);
+    const isDragging = useRef(false);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        startX.current = e.touches[0].clientX;
+        currentX.current = e.touches[0].clientX;
+        isDragging.current = true;
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!startX.current || !isDragging.current) return;
+        
+        const touchX = e.touches[0].clientX;
+        const diff = touchX - startX.current;
+        
+        // Only allow swiping left (negative value), cap at -100
+        if (diff < 0 && diff > -120) {
+            setTranslateX(diff);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        isDragging.current = false;
+        startX.current = null;
+        currentX.current = null;
+
+        // Threshold to snap open
+        if (translateX < -50) {
+            setTranslateX(-80); // Snap to show delete button
+        } else {
+            setTranslateX(0); // Snap back
+        }
+    };
+
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onDelete(meal.id);
+        setTranslateX(0);
+    };
+
+    return (
+        <div className="relative overflow-hidden">
+            {/* Background Delete Button */}
+            <div className="absolute top-0 bottom-0 right-0 w-[80px] bg-[#FF3B30] flex items-center justify-center z-0">
+                <button onClick={handleDelete} className="w-full h-full flex items-center justify-center text-white">
+                    <Trash2 className="w-6 h-6" />
+                </button>
+            </div>
+
+            {/* Swipeable Content */}
+            <div 
+                className="relative bg-white z-10 transition-transform duration-200 ease-out flex items-center justify-between p-4 hover:bg-gray-50 active:bg-gray-100"
+                style={{ transform: `translateX(${translateX}px)` }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+            >
+                <div className="flex items-center gap-4 pointer-events-none select-none">
+                    <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-xl">
+                        {meal.mealType === 'snack' ? '☕️' : '🍽️'}
+                    </div>
+                    <div>
+                        <p className="font-semibold text-gray-900 text-sm">{meal.foodItems[0]?.name}</p>
+                        <p className="text-xs text-gray-500 font-medium mt-0.5">
+                            {new Date(meal.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} · {meal.totalCalories} kcal
+                        </p>
+                    </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-300 pointer-events-none" />
+            </div>
+        </div>
+    );
+};
+
+export const Dashboard: React.FC<DashboardProps> = ({ profile, todayLog, onAddWater, onLogFood, onDeleteMeal }) => {
   const consumedCalories = todayLog.meals.reduce((acc, meal) => acc + meal.totalCalories, 0);
   const remainingCalories = profile.calorieTarget - consumedCalories;
-  const progress = Math.min(100, (consumedCalories / profile.calorieTarget) * 100);
   
-  // Calculate Macros
   const consumedProtein = todayLog.meals.reduce((acc, m) => acc + m.totalProtein, 0);
   const consumedCarbs = todayLog.meals.reduce((acc, m) => acc + m.totalCarbs, 0);
   const consumedFat = todayLog.meals.reduce((acc, m) => acc + m.totalFat, 0);
 
-  const pieData = [
-      { value: consumedCalories, color: '#10b981' },
-      { value: Math.max(0, remainingCalories), color: '#e2e8f0' }
-  ];
-
   return (
-    <div className="space-y-6 pb-20 animate-fade-in">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-            <div>
-                <p className="text-gray-500 text-sm font-medium">Welcome back,</p>
-                <h1 className="text-2xl font-bold text-gray-900">{profile.name}</h1>
+    <div className="space-y-5 animate-fade-in pb-24">
+        
+        {/* Hero Activity Card */}
+        <div className="bg-white rounded-[22px] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+            <div className="flex justify-between items-start mb-4">
+                <h2 className="text-lg font-bold text-gray-900 tracking-tight">Activity</h2>
+                <span className="text-xs font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded-md">TODAY</span>
             </div>
-            <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold">
-                {profile.name.charAt(0)}
-            </div>
-        </div>
-
-        {/* Hero Card */}
-        <div className="bg-white rounded-3xl shadow-xl shadow-emerald-900/5 p-6 border border-emerald-100/50 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-50 rounded-full blur-3xl -mr-10 -mt-10"></div>
             
-            <div className="flex flex-col sm:flex-row items-center gap-8 relative z-10">
-                {/* Circular Progress */}
-                <div className="w-40 h-40 relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie
-                                data={pieData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={75}
-                                startAngle={90}
-                                endAngle={-270}
-                                dataKey="value"
-                                stroke="none"
-                                cornerRadius={10}
-                            >
-                                {pieData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                            </Pie>
-                        </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <Flame className="w-6 h-6 text-emerald-500 mb-1" fill="currentColor" />
-                        <span className="text-2xl font-bold text-gray-800">{Math.max(0, remainingCalories)}</span>
-                        <span className="text-xs text-gray-400 font-medium uppercase">Left</span>
-                    </div>
+            <div className="flex items-center gap-8">
+                {/* Ring Chart */}
+                <div className="relative w-32 h-32 shrink-0">
+                    <MacroChart 
+                        protein={consumedProtein} 
+                        fat={consumedFat} 
+                        carbs={consumedCarbs} 
+                        total={consumedCalories}
+                        target={profile.calorieTarget}
+                    />
                 </div>
 
-                {/* Stats */}
-                <div className="flex-1 w-full space-y-4">
-                    <div>
-                        <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-500">Protein</span>
-                            <span className="font-bold text-gray-700">{consumedProtein} / {profile.proteinTarget}g</span>
-                        </div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, (consumedProtein / profile.proteinTarget) * 100)}%` }}></div>
-                        </div>
+                {/* Legend */}
+                <div className="flex-1 space-y-4">
+                    <div className="flex justify-between items-baseline">
+                         <div className="flex items-center gap-2">
+                             <div className="w-2.5 h-2.5 rounded-full bg-[#FF4F00]"></div>
+                             <span className="text-sm font-medium text-gray-600">Move</span>
+                         </div>
+                         <span className="text-sm font-mono font-semibold">{consumedCalories} <span className="text-gray-400 text-xs">/ {profile.calorieTarget}</span></span>
                     </div>
-                    <div>
-                        <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-500">Carbs</span>
-                            <span className="font-bold text-gray-700">{consumedCarbs} / {profile.carbsTarget}g</span>
-                        </div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, (consumedCarbs / profile.carbsTarget) * 100)}%` }}></div>
-                        </div>
+                    <div className="flex justify-between items-baseline">
+                         <div className="flex items-center gap-2">
+                             <div className="w-2.5 h-2.5 rounded-full bg-[#34C759]"></div>
+                             <span className="text-sm font-medium text-gray-600">Protein</span>
+                         </div>
+                         <span className="text-sm font-mono font-semibold">{consumedProtein} <span className="text-gray-400 text-xs">/ {profile.proteinTarget}g</span></span>
                     </div>
-                    <div>
-                        <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-500">Fat</span>
-                            <span className="font-bold text-gray-700">{consumedFat} / {profile.fatTarget}g</span>
-                        </div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min(100, (consumedFat / profile.fatTarget) * 100)}%` }}></div>
-                        </div>
+                    <div className="flex justify-between items-baseline">
+                         <div className="flex items-center gap-2">
+                             <div className="w-2.5 h-2.5 rounded-full bg-[#007AFF]"></div>
+                             <span className="text-sm font-medium text-gray-600">Carbs</span>
+                         </div>
+                         <span className="text-sm font-mono font-semibold">{consumedCarbs} <span className="text-gray-400 text-xs">/ {profile.carbsTarget}g</span></span>
                     </div>
                 </div>
             </div>
         </div>
 
-        {/* Action Grid */}
+        {/* Metrics Grid */}
         <div className="grid grid-cols-2 gap-4">
-            <button onClick={onLogFood} className="p-4 bg-emerald-600 rounded-2xl text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex flex-col items-start justify-between h-32 group relative overflow-hidden">
-                <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full group-hover:scale-110 transition-transform"></div>
-                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-                    <Plus className="w-6 h-6" />
-                </div>
-                <div>
-                    <span className="block font-bold text-lg">Log Food</span>
-                    <span className="text-emerald-100 text-xs">Camera / Voice</span>
-                </div>
-            </button>
-
-            <div className="p-4 bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 flex flex-col justify-between h-32">
-                <div className="flex justify-between items-start">
-                    <div className="p-2 bg-blue-50 rounded-xl text-blue-500">
-                        <Droplets className="w-6 h-6" />
+            {/* Water Card */}
+            <div className="bg-white rounded-[22px] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40 relative overflow-hidden">
+                <div className="flex justify-between items-start z-10">
+                    <div className="flex items-center gap-2">
+                         <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-[#007AFF]">
+                             <Droplets className="w-4 h-4 fill-current" />
+                         </div>
+                         <span className="font-bold text-[#007AFF] text-sm">Water</span>
                     </div>
-                    <span className="font-bold text-xl text-gray-800">{todayLog.waterIntake}ml</span>
-                </div>
-                <div>
-                    <span className="block text-sm text-gray-500 mb-2">Hydration</span>
-                    <button 
-                        onClick={() => onAddWater(250)}
-                        className="w-full py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-bold rounded-lg transition-colors"
-                    >
-                        +250ml Cup
+                    <button onClick={() => onAddWater(250)} className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200 active:scale-95 transition-all">
+                        <span className="text-lg font-medium leading-none mb-0.5">+</span>
                     </button>
                 </div>
+                <div className="z-10">
+                    <span className="text-3xl font-bold tracking-tighter text-gray-900">{todayLog.waterIntake}<span className="text-lg text-gray-400 font-medium ml-1">ml</span></span>
+                </div>
+                
+                {/* Background Wave Decoration */}
+                <div className="absolute bottom-0 left-0 right-0 h-12 bg-blue-50 opacity-50 rounded-b-[22px]">
+                    <svg viewBox="0 0 1440 320" className="w-full h-full absolute bottom-0 opacity-30 fill-blue-400">
+                       <path fillOpacity="1" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,250.7C960,235,1056,181,1152,165.3C1248,149,1344,171,1392,181.3L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                    </svg>
+                </div>
+            </div>
+
+            {/* Remaining Cals Card */}
+            <div className="bg-white rounded-[22px] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)] flex flex-col justify-between h-40">
+                <div className="flex items-center gap-2">
+                     <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center text-[#FF4F00]">
+                         <Flame className="w-4 h-4 fill-current" />
+                     </div>
+                     <span className="font-bold text-[#FF4F00] text-sm">Energy</span>
+                </div>
+                <div>
+                    <span className="text-3xl font-bold tracking-tighter text-gray-900">{Math.max(0, remainingCalories)}</span>
+                    <p className="text-xs font-medium text-gray-400 mt-1">KCAL LEFT</p>
+                </div>
             </div>
         </div>
 
-        {/* Today's Meals */}
-        <div className="bg-white rounded-3xl p-6 shadow-xl shadow-emerald-900/5 border border-emerald-100/50">
-            <h3 className="font-bold text-gray-800 mb-4">Today's Meals</h3>
-            {todayLog.meals.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
-                    <p>No meals logged yet.</p>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {todayLog.meals.map((meal) => (
-                        <div key={meal.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-gray-100">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-lg">
-                                    🥗
-                                </div>
-                                <div>
-                                    <p className="font-bold text-gray-800 text-sm line-clamp-1">{meal.foodItems[0]?.name}</p>
-                                    <p className="text-xs text-gray-500">{new Date(meal.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                                </div>
-                            </div>
-                            <span className="font-bold text-emerald-600 text-sm">{meal.totalCalories} kcal</span>
-                        </div>
-                    ))}
-                </div>
-            )}
+        {/* Meals List */}
+        <div>
+            <div className="flex justify-between items-end mb-3 px-1">
+                <h3 className="text-xl font-bold tracking-tight text-gray-900">History</h3>
+                <button className="text-[#007AFF] text-sm font-medium">Show All</button>
+            </div>
+            <div className="bg-white rounded-[22px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden">
+                {todayLog.meals.length === 0 ? (
+                    <div className="p-8 text-center">
+                        <p className="text-gray-400 text-sm">No meals recorded today.</p>
+                        <button onClick={onLogFood} className="mt-4 text-[#007AFF] font-medium text-sm">Log your first meal</button>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-gray-100">
+                        {todayLog.meals.map((meal) => (
+                            <SwipeableMealRow key={meal.id} meal={meal} onDelete={onDeleteMeal} />
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     </div>
   );
